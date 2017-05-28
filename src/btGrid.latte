@@ -1,0 +1,111 @@
+<h3>Table component</h3>
+{link loadData!}
+{link updateData!}
+
+<div class="bttable-errors"></div>
+
+{*<h1>Export</h1>
+<div id="toolbar">
+    <select class="form-control">
+        <option value="">Export Basic</option>
+        <option value="all">Export All</option>
+        <option value="selected">Export Selected</option>
+    </select>
+</div>*}
+
+{$table->startTag()|noescape}
+
+<thead>
+    <tr>
+        {if $columns != NULL}
+
+                {foreach $columns as $col}
+                    {$col->render()|noescape}
+                {/foreach}
+
+        {/if}
+        {if $actionColumns != NULL}
+            {foreach $actionColumns as $col}
+                {$col->render()|noescape}
+            {/foreach}
+        {/if}
+    </tr>
+</thead>
+
+{$table->endTag()|noescape}
+
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.9.1/bootstrap-table.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.9.1/extensions/accent-neutralise/bootstrap-table-accent-neutralise.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.9.1/extensions/cookie/bootstrap-table-cookie.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.9.1/extensions/filter-control/bootstrap-table-filter-control.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.9.1/extensions/export/bootstrap-table-export.js"></script>
+<script type="text/javascript" src="/js/bootstrap-table-editable.js"></script>
+<script src="/js/bootstrap-editable.js"></script>
+
+{if $actionColumns != NULL}
+    {foreach $actionColumns as $col}
+        {if $col->getFormat() != NULL}
+            <script>
+                function {$col->getFormatter()|noescape}(value, row, index) {
+                    return "{$col->getFormat()|noescape}";
+                }
+            </script>
+        {/if}
+    {/foreach}
+{/if}
+
+
+<script>
+$.fn.bootstrapTable.defaults.onEditableSave = function (field, row, oldValue, $el) {
+                                        console.log("field:" + field);
+                                        console.log(row);
+                                        console.log("oldValue:" + oldValue);
+                                        console.log($el);
+
+                                        var postData = {
+                                            "id": row["{$primaryKey|noescape}"],
+                                            "column": field,
+                                            "oldValue": oldValue,
+                                            "newValue": row[field],
+                                        };
+
+
+                                        console.log("Call onEditableSave before AJAX");
+                                        console.log(postData);
+
+                                        $.ajax({
+                                                type: "POST",
+                                                data: postData,
+                                                url: "{$updateUrl|noescape}",
+                                                success: function (data) {
+                                                    console.log("Update saved");
+                                                   $("#table").bootstrapTable('refresh');
+                                                },
+                                                error: function () {
+                                                    console.log("Update save error");
+                                                },
+                                                complete: function(data) {
+                                                    console.log(data);
+                                                    var response = JSON.parse(data.responseText);
+
+                                                    if(response["result"] == "error")
+                                                    {
+                                                        if(response.hasOwnProperty("errors"))
+                                                        {
+                                                            for(var i in response["errors"])
+                                                            {
+                                                               var alert = '<div class="alert alert-warning alert-dismissible" role="alert">';
+                                                               alert += '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>';
+                                                               alert += response["errors"][i];
+                                                               alert += '</div>';
+
+                                                                $(".bttable-errors").append(alert);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            });
+};
+
+</script>
+
